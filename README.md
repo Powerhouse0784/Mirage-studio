@@ -83,3 +83,42 @@ Requirements: a managed PostgreSQL database, Docker, a stable secret, and TLS at
 6. Enable automated database backups and test a restore. Keep `AUDIT_HMAC_SECRET` stable and backed up separately from the database; rotating it without a planned migration will make existing audit verification fail.
 
 `next.config.ts` enables standalone output, disables the `X-Powered-By` header, and sets baseline browser security headers. Enforce HTTPS, configure a shared rate-limit store for multi-instance deployments, monitor logs/health checks, and review dependency advisories (`npm audit`) before public launch. The in-memory rate limiter is only a single-process safeguard. MIRAGE remains a simulation-only training lab; it does not monitor or protect real infrastructure.
+
+## V5 — Advanced investigation analytics
+
+The `/analytics` route provides a signed-in user's investigation analytics from saved `SimulationRun` records. It includes date and scenario filters, detection-rate comparisons, decoy-count outcome summaries, run-level evidence, and a CSV export. The API at `/api/analytics` scopes every query to the authenticated user and never inserts demo records. The report currently returns up to 1,000 matching runs; the UI indicates when that limit is reached.
+
+To use it locally, keep your existing `.env` file private, run `npm.cmd install`, then `npm.cmd run dev` and open `/analytics` after signing in. Analytics are based on completed simulation records, so charts remain empty until runs have been saved.
+
+## V6 — Investigation workspace and printable case reports
+
+- Open an individual investigation at `/investigations/<investigation-id>` from the Investigations tab using **Details**.
+- Review an evidence summary, current decoy configuration, audit-chain integrity result, saved event timeline, and linked simulation history.
+- Use **Print / Save PDF** to create a printable report from the browser print dialog, or export events and runs as CSV.
+- Open `/investigations/compare` or use **Case comparison** in the sidebar to compare saved outcomes across investigations in the signed-in user's workspace.
+- Investigation detail pages and comparison pages require authentication and scope data to the current user/workspace.
+
+PDF export uses the browser's print-to-PDF flow, so no PDF-generation dependency or server-side document service is required. Use the print dialog's destination **Save as PDF**.
+
+## V7 — Investigation workflow and evidence search
+
+- Each case now has a persistent status: **Open**, **In review**, or **Resolved**.
+- Add and update analyst notes (up to 10,000 characters) from the case detail page. Status and notes are saved to PostgreSQL through the ownership-scoped investigation API.
+- Search the latest 100 loaded evidence events by title, details, severity, node, or sequence number.
+- Case status is visible in the main investigations list and case comparison table.
+- A new additive Prisma migration adds `status` and `analystNotes` with safe defaults for existing cases.
+
+After updating the project, run `npm.cmd install` if dependencies are not installed, then `npx.cmd prisma generate` and `npm.cmd run db:deploy` before starting the app. Keep your existing `.env` local and private; it is not included in this ZIP.
+
+
+## V8 — Investigation command center
+
+V8 adds per-case priority (Low, Medium, High, Critical), workspace-wide search and filters, status metrics, a seven-day review-overdue indicator, and a recent case update feed. Apply the new migration with `npm.cmd run db:deploy` after installing dependencies and generating Prisma. The overdue indicator is based on `updatedAt` and excludes resolved cases.
+
+## V9 — Case discussion and activity history
+
+V9 adds workspace-private case comments and a chronological activity feed on each investigation detail page. Comments are attributed to the signed-in author, limited to 4,000 characters, and the latest 100 comments/activity entries are displayed. Updates made through the investigation PATCH API (including status, priority, title, and analyst notes) are recorded as activity entries. New records cascade when an investigation is deleted.
+
+This version retains the existing **one private workspace per user** access model. Comments and activity improve handoffs within a case record, but they do not yet enable cross-account shared workspaces, assignments to other users, or team role management. Those require a separate membership/authorization design rather than weakening the existing workspace isolation.
+
+Apply the new `20261025040000_case_collaboration` migration using `npm.cmd run db:deploy` after `npx.cmd prisma generate`. The ZIP does not contain `.env`; keep database credentials local and private.

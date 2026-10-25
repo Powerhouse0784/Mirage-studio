@@ -14,6 +14,9 @@ export const GET = route<P>({}, async (_r, user, { id }) => {
 
 const patch = z.object({
   title: z.string().trim().min(1).max(120).optional(),
+  status: z.enum(['OPEN', 'IN_REVIEW', 'RESOLVED']).optional(),
+  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).optional(),
+  analystNotes: z.string().max(10000).optional(),
   scenario: z.string().max(60).optional(), speed: z.enum(['Slow', 'Guided', 'Fast']).optional(),
   decoys: z.record(z.string().max(60), z.boolean()).refine(o => Object.keys(o).length <= 10).optional(),
   riskScore: z.number().int().min(0).max(100).optional(),
@@ -23,7 +26,18 @@ const patch = z.object({
 export const PATCH = route<P>({}, async (req, user, { id }) => {
   if (!(await findOwned(user.id, id))) return fail(404, 'Investigation not found.');
   const d = await body(req, patch);
-  return json({ investigation: serializeInvestigation(await db.investigation.update({ where: { id }, data: d })) });
+  const before = await findOwned(user.id, id);
+  if (!before) return fail(404, 'Investigation not found.');
+  const updated = await db.investigation.update({ where: { id }, data: d });
+  const labels: Record<string, string> = { title: 'title', status: 'status', priority: 'priority', analystNotes: 'analyst notes', scenario: 'scenario', speed: 'simulation speed', riskScore: 'risk score' };
+  const changes = Object.entries(d).filter(([key, value]) => JSON.stringify((before as unknown as Record<string, unknown>)[key]) !== JSON.stringify(value));
+  if (changes.length) {
+    await db.investigationActivity.createMany({ data: changes.map(([key, value]) => ({
+      investigationId: id, actorId: user.id, actorName: user.name, action: 'CASE_UPDATED',
+      detail: key === 'analystNotes' ? 'Updated analyst notes.' : `Updated ${labels[key] ?? key} to ${typeof value === 'string' ? value.slice(0, 120) : (JSON.stringify(value) ?? String(value)).slice(0, 120)}.`,
+    })) });
+  }
+  return json({ investigation: serializeInvestigation(updated) });
 });
 
 export const DELETE = route<P>({}, async (_r, user, { id }) => {

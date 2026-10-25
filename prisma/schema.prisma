@@ -20,6 +20,7 @@ model User {
   simulationRuns SimulationRun[]
   achievementUnlocks AchievementUnlock[]
   dailyChallenges DailyChallenge[]
+  investigationComments InvestigationComment[]
 }
 
 model Session {
@@ -52,6 +53,9 @@ model Investigation {
   id          String   @id @default(cuid())
   workspaceId String
   title       String
+  status      String   @default("OPEN")
+  priority    String   @default("MEDIUM")
+  analystNotes String  @default("")
   scenario    String   @default("Web exploit")
   speed       String   @default("Guided")
   decoys      Json
@@ -68,6 +72,8 @@ model Investigation {
   workspace Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   events    InvestigationEvent[]
   simulationRuns SimulationRun[]
+  comments InvestigationComment[]
+  activity InvestigationActivity[]
 
   @@index([workspaceId, updatedAt])
 }
@@ -141,4 +147,32 @@ model DailyChallenge {
 
   @@unique([userId, dateKey])
   @@index([userId, dateKey])
+}
+
+
+model InvestigationComment {
+  id              String   @id @default(cuid())
+  investigationId String
+  authorId        String
+  body            String   @db.VarChar(4000)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  investigation   Investigation @relation(fields: [investigationId], references: [id], onDelete: Cascade)
+  author          User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([investigationId, createdAt])
+  @@index([authorId, createdAt])
+}
+
+model InvestigationActivity {
+  id              String   @id @default(cuid())
+  investigationId String
+  actorId         String
+  actorName       String
+  action          String
+  detail          String
+  createdAt       DateTime @default(now())
+  investigation   Investigation @relation(fields: [investigationId], references: [id], onDelete: Cascade)
+
+  @@index([investigationId, createdAt])
 }

@@ -1,6 +1,7 @@
 import { Prisma } from '@/generated/prisma/client';
 import { db } from './db';
 import { computeHash, GENESIS, verifyChain, type ChainEvent } from './audit';
+import type { InvestigationDTO } from './types';
 
 export const SEVERITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
 export const DEFAULT_DECOYS = { 'Honey admin panel': true, 'Honey credentials': true, 'Honey SSH key': true, 'Honey backup vault': true, 'Honey database': true };
@@ -53,6 +54,23 @@ export async function verifyInvestigation(id: string) {
   return verifyChain(events, inv);
 }
 
-export function serializeInvestigation(i: Awaited<ReturnType<typeof findOwned>> & object) {
-  return { id: i.id, title: i.title, scenario: i.scenario, speed: i.speed, decoys: i.decoys as Record<string, boolean>, riskScore: i.riskScore, runs: i.runs, caught: i.caught, missed: i.missed, eventCount: i.eventCount, createdAt: i.createdAt.toISOString(), updatedAt: i.updatedAt.toISOString() };
+export function serializeInvestigation(i: NonNullable<Awaited<ReturnType<typeof findOwned>>>): InvestigationDTO {
+  return {
+    id: i.id,
+    title: i.title,
+    // Prisma stores these as strings; narrow them at the API boundary to the supported DTO unions.
+    status: i.status as InvestigationDTO['status'],
+    priority: i.priority as InvestigationDTO['priority'],
+    analystNotes: i.analystNotes,
+    scenario: i.scenario,
+    speed: i.speed,
+    decoys: i.decoys as Record<string, boolean>,
+    riskScore: i.riskScore,
+    runs: i.runs,
+    caught: i.caught,
+    missed: i.missed,
+    eventCount: i.eventCount,
+    createdAt: i.createdAt.toISOString(),
+    updatedAt: i.updatedAt.toISOString(),
+  };
 }

@@ -1,0 +1,3 @@
+ALTER TABLE "Investigation"
+ADD COLUMN "status" TEXT NOT NULL DEFAULT 'OPEN',
+ADD COLUMN "analystNotes" TEXT NOT NULL DEFAULT '';
