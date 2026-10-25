@@ -14,7 +14,7 @@ export default async function ThreatHuntingPage() {
     <div className="investigation-report-wrap">
       <div className="report-hero"><div><div className="report-eyebrow"><span/> DETECTION ENGINEERING / HUNT WORKBENCH</div><h1>Threat hunt lab<span className="report-title-dot">.</span></h1><p>Build readable detection hypotheses, test them against synthetic telemetry, and export a draft Sigma-style rule for learning.</p></div><div className="report-risk"><small>SAMPLE EVENTS</small><strong>8</strong><span className="risk-low">Local simulation data</span></div></div>
       <ThreatHuntClient />
-      <div className="report-compare-note"><SearchCode size={16}/><p><b>Simulation only.</b> Queries run only against this page's synthetic event examples. Rule output is a draft for education, not a validated production detection. No endpoints, logs, or external systems are queried.</p></div>
+      <div className="report-compare-note"><SearchCode size={16}/><p><b>Simulation only.</b> Queries run only against this page&apos;s synthetic event examples. Rule output is a draft for education, not a validated production detection. No endpoints, logs, or external systems are queried.</p></div>
       <footer className="report-footer">MIRAGE Studio · Threat hunt lab · Training environment</footer>
     </div>
   </main>;
