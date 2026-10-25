@@ -77,6 +77,7 @@ model Investigation {
   simulationRuns SimulationRun[]
   comments InvestigationComment[]
   activity InvestigationActivity[]
+  evidence EvidenceItem[]
 
   @@index([workspaceId, updatedAt])
 }
@@ -192,4 +193,20 @@ model WorkspaceMembership {
 
   @@unique([workspaceId, userId])
   @@index([workspaceId, role])
+}
+
+
+model EvidenceItem {
+  id              String   @id @default(cuid())
+  investigationId String
+  title           String   @db.VarChar(160)
+  kind            String   @db.VarChar(40)
+  description     String   @db.VarChar(12000)
+  sourceUrl       String?  @db.VarChar(2048)
+  sha256          String   @db.VarChar(64)
+  createdBy       String   @db.VarChar(120)
+  createdAt       DateTime @default(now())
+  investigation   Investigation @relation(fields: [investigationId], references: [id], onDelete: Cascade)
+
+  @@index([investigationId, createdAt])
 }

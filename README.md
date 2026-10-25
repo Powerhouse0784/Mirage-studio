@@ -1,156 +1,216 @@
 # MIRAGE Studio
 
-**A hands-on cybersecurity deception and incident-investigation lab.**
+**A browser-based cybersecurity simulation, deception-learning, and incident-investigation lab.**
 
-MIRAGE Studio is a browser-based learning environment for exploring how deception assets can help defenders identify simulated attacker activity. Configure a scenario, observe an animated network path, review generated evidence, and manage investigation records from a single workspace.
+MIRAGE Studio is an educational environment for exploring simulated attacker activity, reviewing generated security events, practicing incident triage, and organizing investigation evidence. It combines a network simulation lab with a SOC-style alert queue, candidate MITRE ATT&CK mappings, case management, evidence records, and guided response playbooks.
 
-> **Safety notice:** MIRAGE Studio is a simulation and training tool. It does not monitor, detect, or protect real systems, and its scenarios do not execute real attacks. Use it for learning, demonstrations, and controlled evaluation only.
+- **GitHub repository:** https://github.com/Powerhouse0784/Mirage-studio
+- **Deployed application:** https://mirage-studio-nine.vercel.app/
+- **Framework:** Next.js App Router · React · TypeScript
+- **Data layer:** PostgreSQL · Prisma
 
-[Source code](https://github.com/Powerhouse0784/Mirage-studio) · Built with Next.js, React, TypeScript, PostgreSQL, and Prisma
+> **Safety and scope:** MIRAGE Studio is for training and demonstration. It simulates activity in the application and does not monitor, detect, contain, or protect real production systems. It does not perform real attacks or execute response actions against endpoints, identities, or networks. MITRE ATT&CK links are educational candidate mappings, not proof that a technique occurred.
 
 ---
 
 ## Contents
 
-- [What you can do](#what-you-can-do)
-- [Screens and routes](#screens-and-routes)
+- [Project overview](#project-overview)
+- [Features](#features)
+- [Application routes](#application-routes)
 - [Technology stack](#technology-stack)
 - [Requirements](#requirements)
 - [Run locally](#run-locally)
 - [Environment variables](#environment-variables)
-- [Common commands](#common-commands)
-- [Testing and quality checks](#testing-and-quality-checks)
-- [Database and data model](#database-and-data-model)
-- [Security design](#security-design)
+- [Database and migrations](#database-and-migrations)
+- [Available commands](#available-commands)
+- [Testing and verification](#testing-and-verification)
+- [API overview](#api-overview)
+- [Security and audit design](#security-and-audit-design)
 - [Deploying to Vercel](#deploying-to-vercel)
-- [Known limitations](#known-limitations)
 - [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
+- [Known limitations](#known-limitations)
+- [Development and contribution](#development-and-contribution)
 - [License](#license)
 
-## What you can do
+## Project overview
 
-### Explore simulated attack scenarios
+The intended workflow is:
 
-- Choose from four scenarios: **Web exploit**, **Phished insider**, **Stolen credentials**, and **Ransomware probe**.
-- Adjust simulation speed and enable or disable deception assets.
-- Follow the simulated path through a network topology and inspect generated events.
-- Review the risk score, simulation outcomes, and detection gaps.
+1. Sign in and open the simulation lab.
+2. Select a scenario and run a controlled simulation.
+3. Review the generated events, outcomes, and detection opportunities.
+4. Create or update an investigation and triage its alerts.
+5. Explore candidate MITRE ATT&CK techniques associated with the scenario and event context.
+6. Record text-based evidence, review case activity, and work through the response playbook.
+7. Compare investigations, review analytics, and print a case report when needed.
 
-### Manage investigations
+MIRAGE Studio is designed to help learners understand the investigation workflow—not to replace a SIEM, EDR, SOAR, threat-intelligence platform, or a production incident-response process.
 
-- Create, open, rename, and delete saved investigations.
-- Keep scenario configuration, simulation counters, and evidence associated with an investigation.
-- Set a case status: **Open**, **In review**, or **Resolved**.
-- Assign a priority: **Low**, **Medium**, **High**, or **Critical**.
-- Save analyst notes and search the investigation list by relevant case information.
-- Search the latest loaded evidence events and compare investigation outcomes.
+## Features
 
-### Review evidence and reports
+### 1. Cybersecurity simulation lab
 
-- Inspect an investigation's evidence timeline and linked simulation history.
-- Verify the investigation's tamper-evident event chain.
-- Export supported event and simulation data as CSV.
-- Print a case report or use the browser's **Save as PDF** option.
+- Four educational scenarios: **Web exploit**, **Phished insider**, **Stolen credentials**, and **Ransomware probe**.
+- A visual network/simulation experience with configurable scenario options and simulation speed.
+- Generated event and outcome information to support investigation practice.
+- Risk and detection-oriented context for discussing how deception assets may help defenders.
+- Simulated activity only; no real attack traffic or production-system changes are performed.
 
-### Learn through repeated practice
+### 2. Investigation case management
 
-- Complete guided learning missions and daily challenges.
-- Track saved simulation runs and unlockable achievements.
-- Review analytics such as detection outcomes, scenario comparisons, decoy outcomes, and recent simulation activity.
+- Create, open, update, and delete investigation records.
+- Track case status and priority, including Open, In review, Resolved and Low, Medium, High, Critical values where applicable.
+- Keep scenario details, analyst notes, counters, and generated event history with a case.
+- Search and review investigations and compare saved investigations.
+- Case detail views bring together evidence, collaboration/activity information, playbooks, and report actions.
 
-### Collaborate within a case record
+### 3. SOC Alert Center — `/alerts`
 
-- Add comments to an investigation and see the comment author and timestamp.
-- Review a chronological activity feed for supported case changes.
-- Keep investigation records private to the authenticated user's workspace under the current access model.
+- A consolidated queue built from simulation/investigation events.
+- Search alert text and associated case/asset context.
+- Filter by severity, investigation status, and case priority.
+- View severity summaries and open the associated investigation.
+- The queue is based on records saved in MIRAGE Studio; it is not connected to live production telemetry.
 
-> **Workspace scope:** The current application creates a private workspace for each user. The schema includes membership-related foundations, but fully functional cross-account shared workspaces, invitations, role administration, and assignment workflows should not be considered available unless separately implemented and tested.
+### 4. MITRE ATT&CK Mapping — `/attack-mapping`
 
-## Screens and routes
+- Explore scenario-driven candidate mappings to MITRE ATT&CK Enterprise tactics and techniques.
+- Search/filter the mapping view and inspect technique details.
+- Follow linked event evidence to its related investigation when available.
+- Use mappings to discuss attack progression and potential detection opportunities.
+
+**Interpretation note:** These mappings are contextual learning aids. They are not generated by a validated detection engine and should not be treated as confirmed attribution or proof of adversary behavior.
+
+### 5. Evidence Locker — investigation detail page
+
+The evidence locker supports structured text/reference records associated with an investigation:
+
+- Evidence types: log excerpt, analyst note, external URL, artifact description, and screenshot reference.
+- Required title and description, with an optional HTTP(S) source URL.
+- Creation timestamp and actor information.
+- SHA-256 fingerprint for the saved title/type/text/source URL, plus search and copy-fingerprint actions.
+- Evidence additions and deletions are reflected in supported investigation activity records.
+
+**Current storage scope:** The locker stores text and references, not uploaded binary files. A fingerprint can help detect changes to the recorded text but does not prove source authenticity. This is not immutable/WORM storage or a legally complete chain-of-custody system.
+
+### 6. Incident Response Playbook — investigation detail page
+
+- A guided seven-step checklist covering alert validation, evidence preservation, impact assessment, containment planning, eradication planning, recovery validation, and lessons learned.
+- Scenario-specific hints for web exploitation, phishing, stolen credentials, and ransomware simulations.
+- Completion progress and a response/handoff notes field.
+- Reset action for the checklist.
+
+**Persistence note:** Checklist progress and notes currently save to `localStorage` in the current browser on the current device. They are not stored in PostgreSQL or synced across devices/users. Clearing browser storage removes that local progress. Playbook actions are advisory and do not execute real containment or remediation.
+
+### 7. Case collaboration and activity
+
+- Case comments with author and timestamp.
+- A chronological activity feed for supported case and evidence actions.
+- Investigation access is scoped to the authenticated user's workspace in the current application access model.
+
+**Workspace scope:** A private workspace is created for each user. The Prisma schema contains membership-related foundations, but fully implemented cross-account workspace sharing, invitation flows, role administration, and team assignment should not be assumed to be available.
+
+### 8. Learning and analytics
+
+- Learning missions, daily challenge/progress records, and achievement-unlock data structures.
+- Persisted simulation runs and analytics views.
+- Scenario/outcome and recent-run information based on saved records.
+- Analytics may be empty or sparse until simulations have been completed and saved.
+
+### 9. Case reports and comparison
+
+- Compare saved investigations through `/investigations/compare`.
+- Export supported event/simulation data where the interface offers CSV export.
+- Print an investigation report using the browser print dialog; choose **Save as PDF** to create a PDF locally.
+- Report output reflects the records available in the current application; it is not a certified forensic report.
+
+### 10. Audit-chain verification
+
+- Investigation events use a keyed HMAC-SHA256 chain to make unauthorized edits, missing/reordered events, and certain removals detectable during verification.
+- Verification depends on keeping `AUDIT_HMAC_SECRET` stable and confidential.
+- The chain is tamper-evident, not proof that an event is true or that its source was trustworthy.
+
+## Application routes
 
 | Route | Purpose |
 | --- | --- |
-| `/` | Main lab, overview, scenario simulation, investigation command center, and learning tools |
+| `/` | Main lab, simulation experience, investigation command center, and learning entry point |
 | `/login` | Register an account or sign in |
 | `/analytics` | Analytics for saved simulation runs |
-| `/investigations/[id]` | Investigation details, evidence, notes, comments, activity, and report actions |
-| `/investigations/compare` | Compare saved investigations in the current workspace |
-| `/api/health` | Health check; returns a failure status when the database is unavailable |
+| `/alerts` | SOC-style alert queue derived from saved simulation/investigation events |
+| `/attack-mapping` | Candidate MITRE ATT&CK mappings and linked event evidence |
+| `/investigations/[id]` | Investigation detail, workflow, evidence locker, comments/activity, response playbook, and report actions |
+| `/investigations/compare` | Compare saved investigations |
+| `/api/health` | Database/application health endpoint |
 
-The API also provides authenticated routes for sessions, investigations, workspace preferences, learning progress, simulation history, and analytics. See the route handlers under `app/api/` for the current request and response contracts.
+API route handlers live under `app/api/`. The route handlers are the source of truth for request validation, authentication requirements, and response shapes.
 
 ## Technology stack
 
-- **Application:** Next.js 15 App Router, React 19, TypeScript
-- **Styling and icons:** CSS, Tailwind CSS tooling, Lucide React
+- **Framework:** Next.js 15 App Router
+- **UI:** React 19, TypeScript, CSS, Tailwind CSS tooling
+- **Icons:** Lucide React
 - **Database:** PostgreSQL
-- **Data access and migrations:** Prisma 7 with the PostgreSQL adapter
-- **Authentication:** Server-managed sessions using secure random tokens, hashed session-token storage, and `HttpOnly` cookies
+- **ORM/migrations:** Prisma 7 with PostgreSQL adapter (`@prisma/adapter-pg`)
 - **Validation:** Zod
-- **Tests:** Vitest and PostgreSQL-backed integration tests
-- **Deployment options:** Vercel or Docker-based hosting with a managed PostgreSQL database
+- **Authentication:** Server-managed sessions, hashed session-token storage, and `HttpOnly` cookies
+- **Testing:** Vitest, including API/audit/simulation tests and database-backed test helpers
+- **Hosting:** Vercel-compatible Next.js deployment; Docker files are also included
 
 ## Requirements
 
-- Node.js **20.9 or newer** (Node.js 22 LTS is recommended)
-- npm
-- PostgreSQL 14 or newer, either locally or through a managed provider such as Neon
-- Git, if cloning the repository
-
-For the Docker-based local database option, install Docker Desktop and make sure Docker is running.
+- Node.js **20.9 or newer**; Node.js 22 LTS is recommended.
+- npm.
+- PostgreSQL 14+ or a compatible managed PostgreSQL provider.
+- Git to clone the repository.
+- Optional: Docker Desktop for the included local PostgreSQL setup.
 
 ## Run locally
 
-### 1. Get the code
-
-Clone the repository and enter the project directory:
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/Powerhouse0784/Mirage-studio.git
 cd Mirage-studio
 ```
 
-Alternatively, download the repository ZIP from GitHub and extract it.
+You can also download the ZIP from GitHub and extract it.
 
-### 2. Configure PostgreSQL
+### 2. Start PostgreSQL
 
-Choose one of these options.
-
-**Option A — Start a local PostgreSQL database with Docker Compose**
+**Option A — Docker Compose (local development):**
 
 ```bash
 docker compose up -d
 ```
 
-The included `docker-compose.yml` creates a local database on port `5432` with the development database name and credentials shown in that file. These defaults are for local development only; do not reuse them in production.
+The included `docker-compose.yml` starts PostgreSQL on port `5432` with the local development database/user/password configured in that file. These defaults are for local development only. Do not reuse them in production.
 
-**Option B — Use an existing PostgreSQL database**
+**Option B — Existing or managed PostgreSQL:**
 
-Create a database and have its connection string ready. For Neon or another hosted provider, use the provider's PostgreSQL connection string and follow its connection-pooling and SSL recommendations.
+Create a database and obtain its connection string. For hosted providers such as Neon, use the provider's recommended SSL and connection settings.
 
-### 3. Create your local environment file
+### 3. Configure environment variables
 
-Create a file named `.env` in the project root. Do not commit it or share it in screenshots, issue reports, or chat messages.
-
-Add these values and replace the placeholders with your own configuration:
+Create a `.env` file in the project root. Start from `.env.example` and set your own values. Do not commit `.env`.
 
 ```dotenv
 DATABASE_URL="postgresql://mirage:mirage@localhost:5432/mirage?schema=public"
 AUDIT_HMAC_SECRET="REPLACE_WITH_A_RANDOM_SECRET_AT_LEAST_32_CHARACTERS_LONG"
 ```
 
-Generate a suitable secret with Node.js:
+Generate a strong secret using Node.js:
 
 ```bash
 node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
 ```
 
-Copy the generated value into `AUDIT_HMAC_SECRET`. Keep this secret stable for the lifetime of the audit records. If it is changed without a planned key-rotation process, existing audit-chain verification will fail.
+Put the generated value in `AUDIT_HMAC_SECRET`. Keep it private and stable for the lifetime of the audit chain. Changing it without a deliberate rotation/migration plan can cause existing audit verification to fail.
 
-If you use a hosted database, replace `DATABASE_URL` with its connection string. Never paste database credentials into public repositories or share them in support messages.
+For a hosted database, replace `DATABASE_URL` with the provider's connection string. Never publish connection strings, passwords, or production secrets in GitHub issues, screenshots, logs, or chat messages.
 
-### 4. Install dependencies and prepare the database
+### 4. Install dependencies and prepare Prisma/database
 
 ```bash
 npm install
@@ -158,19 +218,19 @@ npx prisma generate
 npm run db:deploy
 ```
 
-`db:deploy` applies the migrations included in `prisma/migrations/` to the database configured by `DATABASE_URL`. It does not reset the database.
+`db:deploy` applies committed migrations to the database referenced by `DATABASE_URL`. It is intended for deploying existing migrations and does not reset the database.
 
-### 5. Start the development server
+### 5. Start the app
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000), register an account, sign in, and create or open an investigation.
+Open [http://localhost:3000](http://localhost:3000), register, sign in, and create or open an investigation.
 
-### Windows PowerShell notes
+### Windows PowerShell
 
-The equivalent commands can be run with the `.cmd` suffix if your Windows shell requires it:
+If PowerShell does not resolve the npm/npx scripts as expected, use the `.cmd` variants:
 
 ```powershell
 npm.cmd install
@@ -179,33 +239,54 @@ npm.cmd run db:deploy
 npm.cmd run dev
 ```
 
-If dependencies are already installed, you usually do not need to repeat `npm install` every time you start the app.
-
 ## Environment variables
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `DATABASE_URL` | Yes | PostgreSQL connection string used by Prisma and the application. |
-| `AUDIT_HMAC_SECRET` | Yes for audit operations | Random secret of at least 32 characters used to authenticate audit-chain hashes. Keep it private and stable. |
+| `DATABASE_URL` | Yes | PostgreSQL connection string used by the application/Prisma adapter. |
+| `AUDIT_HMAC_SECRET` | Yes for audit-chain operations | Random secret of at least 32 characters used to calculate/verify HMAC-SHA256 audit links. Keep it confidential and stable. |
 
-The application validates these values when the relevant services are used. Keep local secrets in `.env` and production secrets in your hosting provider's environment-variable or secret-management settings. Do not commit `.env` files.
+Keep local secrets in `.env` and production secrets in the Vercel environment-variable settings. Never commit `.env` or expose database credentials. If a database password has ever been shared publicly, rotate it with the provider.
 
-## Common commands
+## Database and migrations
+
+The Prisma schema is `prisma/schema.prisma`; committed migrations are in `prisma/migrations/`. Core models include:
+
+- `User`, `Session` — user accounts and server-managed sessions.
+- `Workspace`, `WorkspaceMembership` — user workspace and membership-related schema foundations.
+- `Investigation`, `InvestigationEvent` — cases and ordered audit events.
+- `SimulationRun` — persisted simulation outcomes.
+- `LearningMission`, `DailyChallenge`, `AchievementUnlock` — learning/progress records.
+- `InvestigationComment`, `InvestigationActivity` — case comments and activity history.
+- `EvidenceItem` — investigation-linked evidence text/reference records and fingerprints.
+
+Useful commands:
+
+```bash
+npx prisma generate       # Generate Prisma Client
+npm run db:deploy         # Apply committed migrations
+npm run db:migrate        # Development workflow for creating/applying migrations
+npm run db:studio         # Open Prisma Studio
+npx prisma migrate status # Inspect migration status
+```
+
+Back up important data before schema changes on a hosted database. Verify that both the app and migration command use the intended `DATABASE_URL`.
+
+## Available commands
 
 | Command | Purpose |
 | --- | --- |
 | `npm run dev` | Start the local development server |
 | `npm run build` | Create an optimized production build |
-| `npm run start` | Start the production server after building |
+| `npm run start` | Start the built production app |
 | `npm run lint` | Run ESLint |
 | `npm run typecheck` | Run TypeScript type checking without emitting files |
-| `npm test` | Run the Vitest test suite |
-| `npx prisma generate` | Generate the Prisma Client |
-| `npm run db:deploy` | Apply committed database migrations |
-| `npm run db:migrate` | Create/apply a migration during development |
-| `npm run db:studio` | Open Prisma Studio to inspect database records |
+| `npm test` | Run Vitest tests |
+| `npm run db:deploy` | Apply committed Prisma migrations |
+| `npm run db:migrate` | Development migration command |
+| `npm run db:studio` | Open Prisma Studio |
 
-Before a release, run the checks that apply to your environment:
+Recommended pre-release checks:
 
 ```bash
 npm test
@@ -214,49 +295,51 @@ npm run typecheck
 npm run build
 ```
 
-The test suite includes unit and database-backed tests. Some integration tests start a disposable PostgreSQL process and may require permission to bind a local port. A successful build does not replace a manual browser test or a migration test against a staging database.
+Tests that depend on PostgreSQL need a working test database or the environment expected by the test helpers. A passing build does not replace browser testing, migration verification, or a security review.
 
-## Database and data model
+## API overview
 
-Prisma schema and migration files are located in `prisma/`.
+The current route handlers include:
 
-Core records include:
+- **Authentication:** `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`
+- **Workspace preferences/context:** `/api/workspace`
+- **Investigations:** `/api/investigations` and `/api/investigations/[id]`
+- **Investigation events and verification:** `/api/investigations/[id]/events`, `/api/investigations/[id]/verify`
+- **Evidence:** `/api/investigations/[id]/evidence` and `/api/investigations/[id]/evidence/[evidenceId]`
+- **Case collaboration:** `/api/investigations/[id]/collaboration`
+- **Simulation history:** `/api/simulation-runs`
+- **Learning progress:** `/api/learning`
+- **Analytics:** `/api/analytics`
+- **Health:** `/api/health`
 
-- **User and Session:** accounts and server-managed login sessions.
-- **Workspace:** the user's private workspace and display preferences.
-- **Investigation:** case title, status, priority, scenario configuration, analyst notes, and counters.
-- **InvestigationEvent:** ordered evidence events in the audit chain.
-- **SimulationRun:** saved outcomes from completed simulations.
-- **InvestigationComment and InvestigationActivity:** case discussion and supported case-change history.
-- **LearningMission, DailyChallenge, and AchievementUnlock:** learning progress and achievements.
-- **WorkspaceMembership:** membership-related schema foundation; do not assume all team-management workflows are enabled in the UI or API.
+These are application endpoints, not a separately versioned public API. Review the TypeScript route handlers for the current methods, authentication, validation, and payload shape before integrating another client.
 
-Apply migrations using `npm run db:deploy` after setting `DATABASE_URL` and generating the Prisma Client. Back up important data before deploying schema changes to a production database.
+## Security and audit design
 
-## Security design
+The project includes several baseline safeguards:
 
-MIRAGE Studio includes several safeguards intended for a learning application:
+- Passwords are hashed rather than stored as plain text.
+- Session tokens are stored as hashes and sent in an `HttpOnly` cookie.
+- Investigation data access is scoped to the authenticated user's workspace; unauthorized case lookups are treated as not found.
+- Mutating requests include origin checks and schema validation where implemented.
+- Authentication endpoints include an in-process rate limiter.
+- Investigation events are linked with keyed HMAC-SHA256 hashes and can be verified for chain continuity/content changes.
+- Baseline response headers are configured in `next.config.ts` (including content-type sniffing and framing protections).
 
-- Passwords are hashed with a password-hashing function rather than stored as plain text.
-- Session tokens are stored as hashes in the database and delivered through an `HttpOnly` cookie.
-- Authenticated data access is scoped to the current user's workspace; unauthorized investigation lookups are treated as not found.
-- Mutating API requests include same-origin checks and request validation.
-- Authentication endpoints use an in-process rate limiter.
-- Investigation events are linked by a keyed HMAC-SHA256 chain. The verifier checks sequence continuity, event contents, links, and the recorded chain head.
-- Baseline browser security headers are configured in `next.config.ts`.
+### Audit verification caveats
 
-### Understanding audit verification
+Audit verification is **tamper-evident**, not a guarantee of truth. It can identify certain edits, missing/reordered events, and chain inconsistencies as long as the secret remains protected. A person who obtains the HMAC secret may be able to construct valid-looking hashes. Keep the secret separate from the database, protect backups, and document any rotation process.
 
-The audit chain is **tamper-evident**, not proof that the simulation event was factually true. It can reveal changes to recorded event fields, missing or reordered events, and removed trailing events, provided the verification secret remains protected. Anyone who obtains `AUDIT_HMAC_SECRET` may be able to create valid-looking hashes. Store it separately from the database and keep a secure backup.
-
-These controls are not a substitute for a formal security review, centralized logging, managed rate limiting, or a production incident-response process.
+These controls are not a substitute for a formal security review, a centralized logging service, a distributed rate-limit store, production monitoring, or incident response by qualified staff.
 
 ## Deploying to Vercel
 
-1. Push the project to a Git repository and import it into Vercel.
-2. Provision a PostgreSQL database, such as Neon.
-3. Add `DATABASE_URL` and `AUDIT_HMAC_SECRET` in the Vercel project's environment-variable settings for the intended deployment environments.
-4. Before the application relies on new schema changes, run migrations against the intended database using the same code version and `DATABASE_URL`:
+The configured public deployment URL is [mirage-studio-nine.vercel.app](https://mirage-studio-nine.vercel.app/). Deployment health can change as code, environment variables, and database schema change; verify the live deployment after each release.
+
+1. Push the code to GitHub and import the repository into Vercel.
+2. Provision a compatible PostgreSQL database.
+3. In Vercel **Project Settings → Environment Variables**, configure `DATABASE_URL` and `AUDIT_HMAC_SECRET` for the appropriate deployment environments (Preview/Production as needed).
+4. Apply migrations to the database used by that deployment as a controlled release step. Run from a trusted environment using the intended production connection string:
 
    ```bash
    npm ci
@@ -264,47 +347,39 @@ These controls are not a substitute for a formal security review, centralized lo
    npm run db:deploy
    ```
 
-   Run this as a controlled release step. Do not run destructive database commands against production as a troubleshooting shortcut.
-5. Trigger a deployment and review the complete build log. A successful compilation alone does not guarantee that the production database has the correct schema.
-6. After deployment, test `/api/health`, register and sign in, create an investigation, run a simulation, inspect its events, and verify the audit chain.
-7. Enable database backups and test recovery. Keep production secrets private and stable.
+5. Trigger/redeploy the application and inspect the full build output and runtime logs.
+6. Verify `https://mirage-studio-nine.vercel.app/api/health`, then test registration/login, creating an investigation, running a simulation, saving evidence, and verifying the audit chain.
+7. Configure database backups and a recovery process before storing important data.
 
-The project also contains a `Dockerfile` and `docker-compose.yml` for container-based workflows. Production hosting should use a managed PostgreSQL service, HTTPS, secure runtime secrets, database backups, monitoring, and a shared rate-limit store if the application runs across multiple instances.
-
-## Known limitations
-
-- **Simulation only:** the app does not connect to real networks or provide production security monitoring.
-- **Private workspace model:** cross-account shared workspaces, invitation flows, complete role administration, and team assignment workflows are not yet available as a complete feature set.
-- **Rate limiting:** the current in-memory limiter is per process and is not sufficient on its own for horizontally scaled public deployments.
-- **Analytics scope:** reports use saved simulation records; charts may be empty until simulations have been completed and saved. The analytics API applies a result limit.
-- **PDF export:** case reports use the browser's print dialog; select **Save as PDF** rather than expecting a server-generated PDF file.
-- **Legacy browser state:** older browser-local storage from earlier prototypes is not automatically imported into the database.
-- **Production readiness:** run dependency auditing, end-to-end tests, accessibility checks, database restore tests, and a security review before relying on a public deployment.
+Do not put secrets into source code or `next.config.ts`. Do not run destructive reset commands against production as a troubleshooting shortcut. If Preview and Production use different databases, apply migrations to the correct one.
 
 ## Troubleshooting
 
-### `DATABASE_URL is not set`
+### The app shows a server-side exception on Vercel
 
-Make sure a `.env` file exists in the project root and includes a valid `DATABASE_URL`. Restart the development server after changing environment variables.
+Open the Vercel project → **Deployments** → select the active deployment → **Runtime Logs**. Find the first error/stack trace at the time of the request. The browser digest alone does not identify the cause. Check the database connectivity, environment variables, and whether migrations have been applied to the exact database used by the deployment. Also test `/api/health` and inspect its response. Do not post a full database URL or secret in an issue.
+
+### `DATABASE_URL` is missing or invalid
+
+Confirm `.env` exists at the project root locally, the variable is spelled correctly, and the server was restarted after changes. In Vercel, confirm the variable is configured for the environment that produced the deployment and redeploy after changes.
 
 ### Prisma reports a missing table or column
-
-Generate the client and apply the committed migrations:
 
 ```bash
 npx prisma generate
 npm run db:deploy
+npx prisma migrate status
 ```
 
-If the error persists, check `npx prisma migrate status` and confirm that the application and migration command are using the same database. Do not reset a database that contains data you need.
+Confirm the application and migration command use the same database. Do not reset a database containing data you need.
 
-### The application cannot connect to PostgreSQL
+### PostgreSQL connection errors or timeouts
 
-Confirm the database is running, the hostname and port are correct, credentials are valid, and your provider permits the connection. For hosted databases, use the provider's recommended SSL and pooling configuration. Never include the full connection string in a public issue.
+Check hostname, port, credentials, network access, provider connection limits, and SSL settings. Use the provider's recommended connection string and SSL mode. Avoid sharing the connection string in logs or screenshots.
 
-### `next build` fails on Vercel
+### Build fails on Vercel
 
-Read the **first actual error** in the build log, not just the final exit status. Fix syntax, TypeScript, or ESLint errors locally, then run:
+Use the first meaningful build error rather than the final generic failure message. Reproduce locally with:
 
 ```bash
 npm run lint
@@ -312,21 +387,45 @@ npm run typecheck
 npm run build
 ```
 
+Fix the specific syntax, type, dependency, or lint error and deploy again. A successful build does not prove the database schema is ready or the runtime can connect to the database.
+
 ### Audit verification fails
 
-Check whether event records were changed or removed, and confirm that the same `AUDIT_HMAC_SECRET` used to create the records is configured. Do not casually rotate the secret on an existing dataset.
+Check whether events have changed or been removed and confirm that the same `AUDIT_HMAC_SECRET` is configured as when the events were created. Do not casually rotate the secret on an existing dataset.
 
-## Contributing
+### Evidence or playbook progress appears missing
 
-Contributions that improve clarity, accessibility, reliability, testing, or safe educational value are welcome.
+Evidence records are stored in the database. The response playbook's checked steps and notes are stored only in browser `localStorage` on the current device/profile, so another browser/device will not show that local progress.
 
-1. Create a branch for your change.
-2. Keep changes focused and explain the user-facing impact.
-3. Add or update tests for changed behavior.
+## Known limitations
+
+- This is a simulation/training lab, not a real security monitoring platform.
+- The ATT&CK mapping is contextual and educational, not validated automated detection or attribution.
+- Evidence locker records text and URLs; it does not upload or retain binary files.
+- Evidence hashes are integrity aids, not proof of authenticity or immutable evidence retention.
+- Response playbook checkboxes and notes are local to the current browser/device and do not sync to PostgreSQL.
+- Playbook actions are advisory and do not change real systems.
+- Cross-account team workspaces, invitations, complete role administration, and assignment workflows are not available as a complete feature set.
+- The in-memory rate limiter is per process and is not sufficient by itself for horizontally scaled production deployment.
+- Analytics depends on saved simulation records and can be sparse in a new database.
+- PDF output uses the browser's print dialog; choose **Save as PDF**. The app does not generate a certified forensic PDF server-side.
+- Production readiness requires end-to-end and accessibility tests, dependency/security auditing, review of environment configuration, database backup/restore testing, and a security review.
+
+## Development and contribution
+
+Bug reports and focused improvements to usability, accessibility, reliability, documentation, and safe educational value are welcome.
+
+1. Create a branch for the change.
+2. Keep the change focused and describe its user-visible effect.
+3. Add or update tests when behavior changes.
 4. Run `npm test`, `npm run lint`, `npm run typecheck`, and `npm run build` where possible.
-5. Never commit `.env`, database dumps, credentials, or real sensitive data.
-6. Include migration files when changing the Prisma schema.
+5. Include a Prisma migration when the schema changes.
+6. Never commit `.env`, credentials, database dumps, or real sensitive incident data.
 
 ## License
 
-No license file is currently included in the repository. Unless a license is added, the project should not be assumed to be available for unrestricted reuse or redistribution. Add a `LICENSE` file with the intended terms before publishing it as open source.
+No `LICENSE` file is currently included in the repository. Until a license is added, do not assume the project is available for unrestricted reuse, modification, or redistribution. Add a license file with the intended terms before presenting the project as open source.
+
+---
+
+**Project links:** [GitHub repository](https://github.com/Powerhouse0784/Mirage-studio) · [Vercel deployment](https://mirage-studio-nine.vercel.app/)
