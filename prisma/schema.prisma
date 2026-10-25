@@ -21,6 +21,7 @@ model User {
   achievementUnlocks AchievementUnlock[]
   dailyChallenges DailyChallenge[]
   investigationComments InvestigationComment[]
+  memberships WorkspaceMembership[]
 }
 
 model Session {
@@ -47,6 +48,7 @@ model Workspace {
 
   owner         User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   investigations Investigation[]
+  memberships WorkspaceMembership[]
 }
 
 model Investigation {
@@ -56,6 +58,7 @@ model Investigation {
   status      String   @default("OPEN")
   priority    String   @default("MEDIUM")
   analystNotes String  @default("")
+  assignedToId String?
   scenario    String   @default("Web exploit")
   speed       String   @default("Guided")
   decoys      Json
@@ -175,4 +178,18 @@ model InvestigationActivity {
   investigation   Investigation @relation(fields: [investigationId], references: [id], onDelete: Cascade)
 
   @@index([investigationId, createdAt])
+}
+
+
+model WorkspaceMembership {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String   @unique
+  role        String   @default("ANALYST")
+  createdAt   DateTime @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([workspaceId, role])
 }

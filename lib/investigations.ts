@@ -14,7 +14,7 @@ const SEED: NewEvent[] = [
 
 /** Ownership-scoped lookup: returns null for other users' investigations (same as "not found"). */
 export function findOwned(userId: string, id: string) {
-  return db.investigation.findFirst({ where: { id, workspace: { ownerId: userId } } });
+  return db.investigation.findFirst({ where: { id, OR: [{ workspace: { ownerId: userId } }, { workspace: { memberships: { some: { userId } } }] } });
 }
 
 /** Append events atomically, extending the hash chain. Row-locks the investigation so concurrent appends serialize. */
@@ -62,6 +62,7 @@ export function serializeInvestigation(i: NonNullable<Awaited<ReturnType<typeof 
     status: i.status as InvestigationDTO['status'],
     priority: i.priority as InvestigationDTO['priority'],
     analystNotes: i.analystNotes,
+    assignedToId: i.assignedToId,
     scenario: i.scenario,
     speed: i.speed,
     decoys: i.decoys as Record<string, boolean>,

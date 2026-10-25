@@ -17,6 +17,7 @@ const patch = z.object({
   status: z.enum(['OPEN', 'IN_REVIEW', 'RESOLVED']).optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).optional(),
   analystNotes: z.string().max(10000).optional(),
+  assignedToId: z.string().cuid().nullable().optional(),
   scenario: z.string().max(60).optional(), speed: z.enum(['Slow', 'Guided', 'Fast']).optional(),
   decoys: z.record(z.string().max(60), z.boolean()).refine(o => Object.keys(o).length <= 10).optional(),
   riskScore: z.number().int().min(0).max(100).optional(),
@@ -28,8 +29,14 @@ export const PATCH = route<P>({}, async (req, user, { id }) => {
   const d = await body(req, patch);
   const before = await findOwned(user.id, id);
   if (!before) return fail(404, 'Investigation not found.');
+  if (d.assignedToId !== undefined && d.assignedToId !== null) {
+    const member = await db.workspaceMembership.findFirst({ where: { workspaceId: user.workspaceId, userId: d.assignedToId } });
+    const owner = await db.workspace.findFirst({ where: { id: user.workspaceId, ownerId: d.assignedToId } });
+    if (!member && !owner) return fail(400, 'Assignee must be a member of this workspace.');
+  }
+  if (user.role === 'VIEWER') return fail(403, 'Viewers cannot edit investigations.');
   const updated = await db.investigation.update({ where: { id }, data: d });
-  const labels: Record<string, string> = { title: 'title', status: 'status', priority: 'priority', analystNotes: 'analyst notes', scenario: 'scenario', speed: 'simulation speed', riskScore: 'risk score' };
+  const labels: Record<string, string> = { title: 'title', status: 'status', priority: 'priority', analystNotes: 'analyst notes', assignedToId: 'assignee', scenario: 'scenario', speed: 'simulation speed', riskScore: 'risk score' };
   const changes = Object.entries(d).filter(([key, value]) => JSON.stringify((before as unknown as Record<string, unknown>)[key]) !== JSON.stringify(value));
   if (changes.length) {
     await db.investigationActivity.createMany({ data: changes.map(([key, value]) => ({

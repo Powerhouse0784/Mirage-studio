@@ -20,13 +20,18 @@ export async function destroySession() {
   jar.delete(COOKIE);
 }
 
-export type CurrentUser = { id: string; email: string; name: string; workspaceId: string; workspaceName: string; theme: string };
+export type WorkspaceRole = 'OWNER' | 'ADMIN' | 'ANALYST' | 'VIEWER';
+export type CurrentUser = { id: string; email: string; name: string; workspaceId: string; workspaceName: string; theme: string; role: WorkspaceRole };
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
   const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return null;
-  const s = await db.session.findUnique({ where: { tokenHash: sha(token) }, include: { user: { include: { workspace: true } } } });
-  if (!s || s.expiresAt < new Date() || !s.user.workspace) return null;
+  const s = await db.session.findUnique({ where: { tokenHash: sha(token) }, include: { user: { include: { workspace: true, memberships: { include: { workspace: true }, orderBy: { createdAt: 'asc' }, take: 1 } } } } });
+  if (!s || s.expiresAt < new Date()) return null;
   const { user } = s;
-  return { id: user.id, email: user.email, name: user.name, workspaceId: user.workspace!.id, workspaceName: user.workspace!.name, theme: user.workspace!.theme };
+  const membership = user.memberships[0];
+  const workspace = membership?.workspace ?? user.workspace;
+  if (!workspace) return null;
+  const role: WorkspaceRole = user.workspace?.id === workspace.id ? 'OWNER' : (membership?.role as WorkspaceRole) ?? 'ANALYST';
+  return { id: user.id, email: user.email, name: user.name, workspaceId: workspace.id, workspaceName: workspace.name, theme: workspace.theme, role };
 }
