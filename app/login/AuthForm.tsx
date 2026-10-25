@@ -18,8 +18,8 @@ export default function AuthForm() {
   }
   const input = 'w-full rounded-xl border border-[#242a3a] bg-[#151a27] px-3 py-2.5 text-[#f1f3fb] outline-none focus:border-[#8278ff]';
   return (
-    <main className="min-h-screen grid place-items-center p-4" style={{ background: 'var(--bg)' }}>
-      <form onSubmit={submit} className="w-full max-w-sm rounded-2xl border border-[#242a3a] bg-[#111520] p-7 shadow-xl" style={{ color: '#f1f3fb' }}>
+    <main className="min-h-dvh grid place-items-center p-4 sm:p-6" style={{ background: 'var(--bg)' }}>
+      <form onSubmit={submit} className="w-full max-w-sm rounded-2xl border border-[#242a3a] bg-[#111520] p-5 sm:p-7 shadow-xl" style={{ color: '#f1f3fb' }}>
         <div className="flex items-center gap-3 mb-6">
           <div className="grid h-10 w-10 place-items-center rounded-xl text-white" style={{ background: 'linear-gradient(140deg,#8178ff,#5146d9)' }}><Radar size={22} /></div>
           <div><strong style={{ fontFamily: 'Space Grotesk', fontSize: 20 }}>MIRAGE</strong><div className="text-xs text-[#8992a9]">DECEPTION LAB</div></div>
